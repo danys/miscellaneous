@@ -55,7 +55,7 @@ public class Node
 		while(!unchanged)
 		{
 			unchanged = true;
-			while(current.next!=null)
+			while((current!=null)&&(current.next!=null))
 			{
 				if (current.next.data<current.data)
 				{
@@ -72,9 +72,9 @@ public class Node
 						Node prev = null;
 						while((p.next!=null) && (p.next.data!=current.data))
 						{
-							if (p.next.data==current.data) prev=p;
 							p = p.next;
 						}
+						if (p.next.data==current.data) prev=p;
 						temp = current.next.next;
 						temp2 = current.next;
 						current.next.next = current;
@@ -85,6 +85,7 @@ public class Node
 				}
 				current = current.next;
 			}
+			head.print(head);
 			current = head;
 		}
 		return head;
