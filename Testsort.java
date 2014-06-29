@@ -1,3 +1,5 @@
+package interview;
+
 import java.util.Random;
 
 public class Testsort
@@ -130,7 +132,7 @@ public class Testsort
 	{
 		int tempa[] = new int[r-l+1];
 		int i=l;
-		int j=r;
+		int j=mid+1;
 		int cc=0;
 		while((i<=mid) && (j<=r))
 		{
@@ -164,7 +166,7 @@ public class Testsort
 				cc++;
 			}
 		}
-		for(int k=0;k<cc;k++) a[l+k]=tempa[k];
+		for(int k=0;k<r-l+1;k++) a[l+k]=tempa[k];
 	}
 	
 	public static void mergesort(int a[],int l, int r)
