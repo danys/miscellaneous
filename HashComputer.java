@@ -14,20 +14,12 @@ import java.security.NoSuchAlgorithmException;
 public class HashComputer
 {
 	
-	public static char convert(int x)
+	public static char convert(int x) throws IOException
 	{
-		try
-		{
 			if (x<0) throw new IOException();
 			if (x<10) return (char)('0'+x);
 			if (x<16) return (char)('a'+x-10);
 			throw new IOException();
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-			return '0';
-		}
 	}
 	
 	public static String hash(String input, String algorithm)
@@ -45,9 +37,22 @@ public class HashComputer
 			{
 				temp = digest[i];
 				half = (temp & 0xF0) >>> 4;
-				sb.append(convert(half));
+				try
+				{
+					sb.append(convert(half));
+				}
+				catch (IOException e)
+				{
+					sb.append('0'); //default to '0'
+				}
 				half = temp & 0x0F;
-				sb.append(convert(half));
+				try {
+					sb.append(convert(half));
+				}
+				catch (IOException e)
+				{
+					sb.append('0'); //default to '0'
+				}
 			}
 			
 			return sb.toString();
