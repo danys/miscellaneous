@@ -107,7 +107,7 @@ public class AStar
 		return false;
 	}
 	
-	//The main method which computes the shortes path using the A* algorithm
+	//The main method which computes the shortest path using the A* algorithm
 	public int[] astar(int startNode, int goalNode, int nNodes, int board[][])
 	{
 		//Initialization
