@@ -1,3 +1,5 @@
+package assignment;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -82,12 +84,76 @@ public class Main
 		}
 	}
 	
+	public static class PriorityQueue
+	{
+		public int ids[];
+		public int headPointer;
+		public int dist[][];
+		public int source;
+		
+		public PriorityQueue(int capacity,int dist[][],int source)
+		{
+			ids = new int[capacity];
+			headPointer = 0;
+			this.dist = dist;
+			this.source = source;
+		}
+		
+		public void add(int e)
+		{
+			ids[headPointer++]=e;
+			int t = ids[headPointer-1];
+			ids[headPointer-1]=ids[0];
+			ids[0]=t;
+			heapify(0,headPointer-1);
+		}
+		
+		public void heapify(int i, int m)
+		{
+			int t,j;
+			while(2*i<=m)
+			{
+				j = 2*i;
+				if (j<m)
+				{
+					if (dist[source][ids[j]]<dist[source][ids[j+1]]) j++;
+				}
+				if (dist[source][ids[i]]<dist[source][ids[j]])
+				{
+					t = ids[i];
+					ids[i]=ids[j];
+					ids[j]=t;
+					i=j;
+				}
+				else i=m;
+			}
+		}
+		
+		public int extractAndRemoveMin() throws Exception
+		{
+			if (headPointer==0) throw new Exception();
+			int res = ids[0];
+			headPointer--;
+			ids[0]=ids[headPointer];
+			heapify(0,headPointer-1);
+			return res;
+		}
+		
+		public int size()
+		{
+			return headPointer;
+		}
+	}
+	
 	public static void dijkstra(int dist[][],int source, int n)
 	{
-		List<Integer> queue = new ArrayList<Integer>();
+		//List<Integer> queue = new ArrayList<Integer>();
+		PriorityQueue queue = new PriorityQueue(n+1,dist,source);
+		boolean done[] = new boolean[n+1];
 		for(int i=1;i<=n;i++)
 		{
 			dist[source][i] = Integer.MAX_VALUE;
+			done[i] = false;
 			queue.add(i);
 		}
 		dist[source][source] = 0;
@@ -95,27 +161,29 @@ public class Main
 		List<Integer> list;
 		while(queue.size()>0)
 		{
-			minindex=0;
-			mindist=dist[source][queue.get(minindex)];
-			nodeid = queue.get(minindex);
-			for(int i=1;i<queue.size();i++)
+			nodeid=0;
+			try
 			{
-				if (dist[source][queue.get(i)]<mindist)
-				{
-					mindist = dist[source][queue.get(i)];
-					minindex = i;
-					nodeid = queue.get(minindex);
-				}
+				nodeid = queue.extractAndRemoveMin();
+			} catch (Exception e)
+			{
+				System.out.println("Error extracting form empty queue!");
+				System.exit(0);
 			}
-			queue.remove(minindex);
+			done[nodeid]=true;
 			list = adjGraph.get(nodeid);
 			if (list==null) continue;
 			int newlen;
 			for(Integer neighbor : list)
 			{
+				if (done[neighbor]) continue;
 				if (dist[source][nodeid]==Integer.MAX_VALUE) continue;
 				newlen = dist[source][nodeid]+edges.get(Integer.toString(nodeid)+"|"+Integer.toString(neighbor));
-				if (newlen<dist[source][neighbor]) dist[source][neighbor] = newlen;
+				if (newlen<dist[source][neighbor])
+				{
+					dist[source][neighbor] = newlen;
+					queue.heapify(0, queue.size());
+				}
 			}
 		}
 	}
@@ -123,7 +191,7 @@ public class Main
 	public static void main(String args[])
 	{
 		long time = System.currentTimeMillis();
-		File file = new File("/Users/Dany/Downloads/g3.txt");
+		File file = new File("C:\\Users\\Dany\\Downloads\\g3.txt");
 		BufferedReader reader = null;
 		int n = 0,m = 0;
 		try
@@ -239,7 +307,7 @@ public class Main
 				}
 			}
 			System.out.println("Minimum length of all pairs distances: "+Integer.toString(min));
-			System.out.println("Computation time: "+Double.toString((double)((System.currentTimeMillis()-time)/1000))+" sec");
+			System.out.println("Computation time: "+Double.toString((double)(System.currentTimeMillis()-time)/1000.0)+" sec");
 		}
 		catch(FileNotFoundException e)
 		{
