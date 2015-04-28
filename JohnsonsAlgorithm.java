@@ -61,6 +61,7 @@ public class Main
 		return true; //graph contains no negative length cycle
 	}
 	
+	//Reweighting all edges in O(m)
 	public static void reweight(int a[][], int n)
 	{
 		Set<Entry<String,Integer>> set = edges.entrySet();
@@ -90,22 +91,25 @@ public class Main
 		public int headPointer;
 		public int dist[][];
 		public int source;
+		public Map<Integer,Integer> itable;
 		
 		public PriorityQueue(int capacity,int dist[][],int source)
 		{
-			ids = new int[capacity];
-			headPointer = 0;
+			ids = new int[capacity+1];
+			headPointer = 1;
 			this.dist = dist;
 			this.source = source;
+			this.itable = new HashMap<Integer,Integer>();
 		}
 		
 		public void add(int e)
-		{
-			ids[headPointer++]=e;
-			int t = ids[headPointer-1];
-			ids[headPointer-1]=ids[0];
-			ids[0]=t;
-			heapify(0,headPointer-1);
+		{	
+			ids[headPointer]=ids[1];
+			ids[1]=e;
+			headPointer++;
+			itable.put(e, 1);
+			itable.put(ids[headPointer-1], headPointer-1);
+			heapify(1,headPointer-1);
 		}
 		
 		public void heapify(int i, int m)
@@ -116,13 +120,15 @@ public class Main
 				j = 2*i;
 				if (j<m)
 				{
-					if (dist[source][ids[j]]<dist[source][ids[j+1]]) j++;
+					if (dist[source][ids[j]]>dist[source][ids[j+1]]) j++;
 				}
-				if (dist[source][ids[i]]<dist[source][ids[j]])
+				if (dist[source][ids[i]]>dist[source][ids[j]])
 				{
 					t = ids[i];
 					ids[i]=ids[j];
+					itable.put(ids[j], i);
 					ids[j]=t;
+					itable.put(t,j);
 					i=j;
 				}
 				else i=m;
@@ -131,23 +137,51 @@ public class Main
 		
 		public int extractAndRemoveMin() throws Exception
 		{
-			if (headPointer==0) throw new Exception();
-			int res = ids[0];
+			if (headPointer==1) throw new Exception();
+			int res = ids[1];
 			headPointer--;
-			ids[0]=ids[headPointer];
-			heapify(0,headPointer-1);
+			ids[1]=ids[headPointer];
+			itable.put(ids[headPointer],1);
+			heapify(1,headPointer-1);
+			itable.remove(new Integer(res));
 			return res;
 		}
 		
 		public int size()
 		{
-			return headPointer;
+			return headPointer-1;
+		}
+		
+		public int lookup(int x)
+		{
+			Integer l = itable.get(x);
+			if (l==null) return -1;
+			else return l.intValue();
+		}
+		
+		public void decreaseKey(int x)
+		{
+			int i = lookup(x),parent,t;
+			while(i/2>=1)
+			{
+				parent = i/2;
+				if (dist[source][ids[parent]]<=dist[source][ids[i]]) break;
+				else
+				{
+					t = ids[parent];
+					ids[parent] = ids[i];
+					itable.put(ids[i],parent);
+					ids[i] = t;
+					itable.put(t,i);
+					i /= 2;
+				}
+			}
 		}
 	}
 	
+	//O(m*log(n)) implementation of Dijkstra's shortest path algorithm
 	public static void dijkstra(int dist[][],int source, int n)
 	{
-		//List<Integer> queue = new ArrayList<Integer>();
 		PriorityQueue queue = new PriorityQueue(n+1,dist,source);
 		boolean done[] = new boolean[n+1];
 		for(int i=1;i<=n;i++)
@@ -157,7 +191,8 @@ public class Main
 			queue.add(i);
 		}
 		dist[source][source] = 0;
-		int minindex=0,mindist,nodeid;
+		queue.decreaseKey(source);
+		int nodeid;
 		List<Integer> list;
 		while(queue.size()>0)
 		{
@@ -182,16 +217,24 @@ public class Main
 				if (newlen<dist[source][neighbor])
 				{
 					dist[source][neighbor] = newlen;
-					queue.heapify(0, queue.size());
+					queue.decreaseKey(neighbor);
 				}
 			}
 		}
 	}
 	
+	/**
+	 * Method uses Johnson's algorithm for finding all-pairs shortest paths.
+	 * Time complexity: O(n*m*log(n))
+	 * Sparse graphs m=O(n) => time complexity: O(n^2*log(n)). Better than Floyd-Warshall's O(n^3) algorithm.
+	 * Dense graphs m=O(n^2) => time complexity: O(n^3*log(n))
+	 * If the graph has negative length cycles the method detects it using Bellman-Ford.
+	 * @param args no arguments
+	 */
 	public static void main(String args[])
 	{
 		long time = System.currentTimeMillis();
-		File file = new File("C:\\Users\\Dany\\Downloads\\g3.txt");
+		File file = new File("C:\\Users\\Dany\\Downloads\\graph.txt");
 		BufferedReader reader = null;
 		int n = 0,m = 0;
 		try
@@ -271,7 +314,8 @@ public class Main
 				System.exit(0);
 			}
 			System.out.println("All edges have been found!");
-			//1.) Add source node with id 0
+			//Johnson's algorithm for finding all-pairs shortest paths
+			//1.) Add source node with id 0 in O(n)
 			// Add 0 to every incidence list
 			for(int i=1;i<=n;i++)
 			{
@@ -281,7 +325,7 @@ public class Main
 				incGraph.put(i, iList);
 			}
 			n++; //n=1001
-			//2.) Run Bellman-Ford algorithm to detect negative length cycles
+			//2.) Run Bellman-Ford algorithm to detect negative length cycles in O(n*m)
 			int A[][] = new int[n+1][n];
 			if (bellmanford(A,n,incGraph)) System.out.println("Successfully run Bellman-Ford!");
 			else
@@ -302,6 +346,7 @@ public class Main
 			{
 				for(int j=1;j<=n;j++)
 				{
+					if (res[i][j]==Integer.MAX_VALUE) continue;
 					res[i][j] = res[i][j]-A[n][i]+A[n][j];
 					if (res[i][j]<min) min = res[i][j];
 				}
