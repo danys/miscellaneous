@@ -6,67 +6,49 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Main
+/**
+ * This application solves the traveling salesman problem using a dynamic programming approach.
+ * Time complexity: O(n^2*2^n)
+ * The program works up to instances of 25 cities.
+ * 
+ * @author Dany
+ *
+ */
+public class TSP
 {
+	private static float A[][];
+	private static float B[][];
+	private static float dist[][];
+	private static List<List<Integer>> smallSets;
+	private static List<List<Integer>> bigSets;
+	private static int maxsets = 2704156;
+	private static int maxdestinations = 25;
+	
 	public static class Coordinate
 	{
-		private double x;
-		private double y;
+		private float x;
+		private float y;
 		
-		public Coordinate(double x,double y)
+		public Coordinate(float x,float y)
 		{
 			this.x = x;
 			this.y = y;
 		}
 	}
 	
-	public static double euclidDistance(Coordinate c1, Coordinate c2)
+	public static float euclidDistance(Coordinate c1, Coordinate c2)
 	{
-		return Math.sqrt((c1.x-c2.x)*(c1.x-c2.x)+(c1.y-c2.y)*(c1.y-c2.y));
+		return (float)Math.sqrt((c1.x-c2.x)*(c1.x-c2.x)+(c1.y-c2.y)*(c1.y-c2.y));
 	}
 	
-	public static void generateBigSets(int ncities)
+	public static void generateSets(List<Integer> indexes,List<Integer> set,int maxsize,List<List<Integer>> sets)
 	{
-		bigSets = new ArrayList<List<Integer>>();
-		boolean present[] = new boolean[ncities+1];
-		List<Integer> bigSet;
-		List<Integer> smallSet;
-		table = new int[smallSets.size()*ncities];
-		missing = new int[smallSets.size()*ncities];
-		for(int index=0;index<smallSets.size();index++)
-		{
-			smallSet = smallSets.get(index);
-			for(int i=0;i<present.length;i++) present[i]=false;
-			for(Integer x: smallSet) present[x]=true;
-			for(int i=1;i<present.length;i++)
-			{
-				if ((!present[i]) && (i>smallSet.get(smallSet.size()-1)))
-				{
-					bigSet = new ArrayList<Integer>();
-					for(Integer x: smallSet) bigSet.add(new Integer(x.intValue()));
-					bigSet.add(i);
-					bigSets.add(bigSet);
-					table[bigSets.size()-1]=index;
-					missing[bigSets.size()-1]=i;
-				}
-			}
-		}
-	}
-	
-	public static void generateSets(List<Integer> indexes,List<Integer> set,int maxsize)
-	{
-		if (maxsize==1)
-		{
-			List<Integer> list1 = new ArrayList<>();
-			list1.add(1);
-			smallSets.add(list1);
-			return;
-		}
 		if (set.size()==maxsize)
 		{
+			if (maxsize==0) return;
 			List<Integer> l = new ArrayList<Integer>();
 			for(int i=0;i<set.size();i++) l.add(set.get(i));
-			smallSets.add(l);
+			sets.add(l);
 			return;
 		}
 		Integer nextindex;
@@ -76,79 +58,115 @@ public class Main
 			if ((set.size()>0) && (nextindex<set.get(set.size()-1))) continue;
 			indexes.remove(nextindex);
 			set.add(nextindex);
-			generateSets(indexes,set,maxsize);
+			generateSets(indexes,set,maxsize,sets);
 			set.remove(nextindex);
 			indexes.add(i, nextindex);
 		}
 	}
 	
-	public static double solve(int ncities, Coordinate coords[])
+	public static List<Integer> reducedSet(List<Integer> list, int x)
 	{
-		double B[][];
-		int counter=0;
-		for(int i=1;i<=ncities;i++)
+		List<Integer> res = new ArrayList<Integer>();
+		for(Integer i: list)	if (i.intValue()!=x) res.add(i.intValue());
+		return res;
+	}
+	
+	public static int seekSet(List<List<Integer>> sets, List<Integer> set,int l, int r)
+	{
+		if (set.size()==0) return 0; //case where empty list is sought: m=0
+		if (l>r) return -1;
+		int m=(l+r)/2;
+		List<Integer> cSet;
+		int x,counter=0,verdict=0;
+		cSet = sets.get(m);
+		for(int j=0;j<cSet.size();j++)
 		{
-			if (i==1) A[counter][i-1] = 0;
-			else A[counter][i-1] = Integer.MAX_VALUE;
+			x = cSet.get(j);
+			if (x>set.get(j).intValue())
+			{
+				verdict=-1;
+				break;
+			}
+			else if (x<set.get(j).intValue())
+			{
+				verdict=1;
+				break;
+			}
+			else if (x==set.get(j).intValue()) counter++;
 		}
-		counter++;
-		List<Integer> list = new ArrayList<Integer>(),startlist = new ArrayList<Integer>();
-		List<Integer> reducedSet;
-		double temp,minimum;
-		int index,j,bigs=0;
+		if ((verdict==0)&&(counter==cSet.size())) return m;
+		else if (verdict==-1) return seekSet(sets,set,l,m-1);
+		else if (verdict==1) return seekSet(sets,set,m+1,r);
+		return -1;
+	}
+	
+	public static float solve(int ncities)
+	{
+		int counter=0,index,k;
+		float minimum;
+		for(int i=0;i<ncities;i++)
+		{
+			if (i==0) A[counter][i] = 0; //i ranges from 0 to ncities-1
+			else A[counter][i] = Integer.MAX_VALUE;
+		}
+		List<Integer> list = new ArrayList<Integer>();
+		List<Integer> emptylist = new ArrayList<Integer>();
+		List<Integer> bigSet,rSet;
 		for(int i=2;i<=ncities;i++) list.add(new Integer(i));
 		for(int m=2;m<=ncities;m++)
 		{
-			System.out.println("Generating sets with size = "+m);
-			startlist = new ArrayList<Integer>();
-			startlist.add(1);
-			generateSets(list,startlist,m-1);
-			generateBigSets(ncities);
-			B = new double[bigSets.size()][ncities];
+			System.out.println("m = "+m);
+			generateSets(list,emptylist,m-2,smallSets); //lists do not contain 1
+			System.out.println("OK generated small sets = "+smallSets.size());
+			generateSets(list,emptylist,m-1,bigSets); //lists do not contain 1
+			System.out.println("OK generated big sets = "+bigSets.size());
 			counter=0;
-			for(int i=0;i<bigSets.size();i++)
+			for(int s=0;s<bigSets.size();s++)
 			{
-				index = table[i];
-				reducedSet = smallSets.get(index);
-				j = missing[i];
-				minimum = Double.MAX_VALUE;
-				for(Integer k: reducedSet)
+				bigSet = bigSets.get(s);
+				for(Integer j: bigSet)
 				{
-					if (k==j) continue;
-					temp = A[index][k-1]+euclidDistance(coords[k], coords[j]);
-					if (temp<minimum) minimum=temp;
+					rSet = reducedSet(bigSet,j);
+					index = seekSet(smallSets,rSet,0,smallSets.size()-1);
+					minimum = Float.MAX_VALUE;
+					for(int kindex=0;kindex<=bigSet.size();kindex++)
+					{
+						if (kindex==bigSet.size()) k=1;
+						else k=bigSet.get(kindex);
+						if (k==j) continue;
+						minimum = Math.min(minimum,A[index][k-1]+dist[k-1][j-1]);
+					}
+					B[counter][j-1]=minimum;
 				}
-				B[i][j-1]=minimum;
+				counter++;
 			}
-			System.out.println("Trying to allocate A = "+bigSets.size());
-			bigs = bigSets.size();
-			for(List<Integer> l: bigSets) l.clear();
-			bigSets.clear();
-			for(List<Integer> l: smallSets) l.clear();
+			System.out.println("Cleaning up");
+			for(List<Integer> set: smallSets) set.clear();
 			smallSets.clear();
-			A = new double[bigs][ncities+1];
-			for(int i=0;i<bigs;i++)
+			for(List<Integer> set: bigSets) set.clear();
+			bigSets.clear();
+			System.out.println("Copying");
+			for(int i=0;i<counter;i++)
 			{
-				for(int l=1;l<=ncities;l++)	A[i][l-1]=B[i][l-1];
+				for(int j=0;j<ncities;j++)
+				{
+					if (B[i][j]==0) A[i][j] = Float.MAX_VALUE;
+					else A[i][j]=B[i][j];
+				}
 			}
 		}
-		minimum = Integer.MAX_VALUE;
-		for(int i=0;i<bigs;i++)
-		{
-			for(int z=2;z<=ncities;z++)
-			{
-				temp = A[i][z-1]+euclidDistance(coords[z], coords[1]);
-				if (temp<minimum) minimum=temp;
-			}
-		}
+		minimum = Float.MAX_VALUE;
+		for(int i=1;i<ncities;i++)	minimum = Math.min(minimum, A[0][i]+dist[i][0]);
 		return minimum;
 	}
 	
-	private static double A[][];
-	private static List<List<Integer>> smallSets;
-	private static List<List<Integer>> bigSets;
-	private static int table[];
-	private static int missing[];
+	public static void precompute(int ncities,Coordinate coords[])
+	{
+		for(int i=0;i<ncities;i++)
+		{
+			for(int j=0;j<ncities;j++) dist[i][j]=euclidDistance(coords[i],coords[j]);
+		}
+	}
 	
 	public static void main(String args[])
 	{
@@ -175,15 +193,18 @@ public class Main
 						System.out.println("City coordinates must have an x and a y coorinate!");
 						System.exit(0);
 					}
-					coords[linecounter]=new Coordinate(Double.parseDouble(posstr[0]),Double.parseDouble(posstr[1]));
+					coords[linecounter-1]=new Coordinate(Float.parseFloat(posstr[0]),Float.parseFloat(posstr[1]));
 				}
 				linecounter++;
 				if (linecounter==ncities+1) break;
 			}
-			A = new double[1][ncities];
+			dist = new float[ncities][ncities];
+			precompute(ncities,coords);
+			A = new float[maxsets][maxdestinations];
+			B = new float[maxsets][maxdestinations];
 			smallSets = new ArrayList<List<Integer>>();
 			bigSets = new ArrayList<List<Integer>>();
-			System.out.println("Minimum length tour has length = "+Double.toString(solve(ncities,coords)));
+			System.out.println("Minimum length tour has length = "+Float.toString(solve(ncities)));
 		}
 		catch(IOException e)
 		{
