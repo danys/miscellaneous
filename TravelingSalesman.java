@@ -116,10 +116,10 @@ public class TSP
 		for(int m=2;m<=ncities;m++)
 		{
 			System.out.println("m = "+m);
-			generateSets(list,emptylist,m-2,smallSets); //lists do not contain 1
-			System.out.println("OK generated small sets = "+smallSets.size());
+			if (m==2) generateSets(list,emptylist,m-2,smallSets); //lists do not contain 1
+			System.out.println("OK, small sets count = "+smallSets.size());
 			generateSets(list,emptylist,m-1,bigSets); //lists do not contain 1
-			System.out.println("OK generated big sets = "+bigSets.size());
+			System.out.println("OK, generated big sets with count = "+bigSets.size());
 			counter=0;
 			for(int s=0;s<bigSets.size();s++)
 			{
@@ -143,7 +143,7 @@ public class TSP
 			System.out.println("Cleaning up");
 			for(List<Integer> set: smallSets) set.clear();
 			smallSets.clear();
-			for(List<Integer> set: bigSets) set.clear();
+			for(List<Integer> set: bigSets)	smallSets.add(set);
 			bigSets.clear();
 			System.out.println("Copying");
 			for(int i=0;i<counter;i++)
