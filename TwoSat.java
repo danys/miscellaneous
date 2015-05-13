@@ -153,6 +153,25 @@ public class TwoSat
 		}
 	}
 	
+	public static boolean addToMap(Integer xt, int xfile,int idcounter,Map<Integer,Integer> map)
+	{
+		if (xt==null)
+		{
+			if (xfile<0)
+			{
+				map.put(-xfile, idcounter);
+				map.put(xfile, idcounter+1);
+			}
+			else
+			{
+				map.put(xfile, idcounter);
+				map.put(-xfile, idcounter+1);
+			}
+			return true;
+		}
+		else return false;
+	}
+	
 	public static void main(String args[])
 	{
 		String file = "C:\\Users\\Dany\\Downloads\\2sat6.txt",line;
@@ -209,34 +228,14 @@ public class TwoSat
 				}
 				e1=null;
 				e2=null;
-				if (xt==null)
+				if (addToMap(xt, xfile,idcounter,map))
 				{
-					if (xfile<0)
-					{
-						map.put(-xfile, idcounter);
-						map.put(xfile, idcounter+1);
-					}
-					else
-					{
-						map.put(xfile, idcounter);
-						map.put(-xfile, idcounter+1);
-					}
 					xt=idcounter;
 					xf=idcounter+1;
 					idcounter += 2;
 				}
-				if (yt==null)
+				if (addToMap(yt, yfile,idcounter,map))
 				{
-					if (yfile<0)
-					{
-						map.put(-yfile, idcounter);
-						map.put(yfile, idcounter+1);
-					}
-					else
-					{
-						map.put(yfile, idcounter);
-						map.put(-yfile, idcounter+1);
-					}
 					yt=idcounter;
 					yf=idcounter+1;
 					idcounter += 2;
