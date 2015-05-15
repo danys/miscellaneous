@@ -94,7 +94,7 @@ public class KClustering
 		Edge e;
 		//We have a minclusters clusters
 		while(sameRoot(edges.get(edgeIndex).id1,edges.get(edgeIndex).id2)) edgeIndex++;
-		System.out.println("Maximim spacing of 4-clustering = "+edges.get(edgeIndex).weight);
+		System.out.println("Maximim spacing of "+minclusters+"-clustering = "+edges.get(edgeIndex).weight);
 	}
 	
 	public static void main(String args[])
